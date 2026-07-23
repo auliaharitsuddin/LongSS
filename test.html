@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LongSS - Test Page</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+    }
+    
+    .hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 100px 20px;
+      text-align: center;
+    }
+    
+    .hero h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    
+    .hero p {
+      font-size: 20px;
+      opacity: 0.9;
+    }
+    
+    .section {
+      padding: 60px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .section:nth-child(even) {
+      background: #f7fafc;
+    }
+    
+    h2 {
+      font-size: 36px;
+      margin-bottom: 30px;
+      color: #667eea;
+    }
+    
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-top: 40px;
+    }
+    
+    .feature-card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .feature-card h3 {
+      font-size: 24px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    
+    .feature-card p {
+      color: #666;
+      font-size: 16px;
+    }
+    
+    .icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    .timeline {
+      position: relative;
+      padding-left: 40px;
+    }
+    
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #667eea;
+    }
+    
+    .timeline-item {
+      position: relative;
+      margin-bottom: 40px;
+      padding-left: 30px;
+    }
+    
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -46px;
+      top: 0;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #667eea;
+      border: 3px solid white;
+      box-shadow: 0 0 0 2px #667eea;
+    }
+    
+    .timeline-item h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    
+    .code-block {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 20px 0;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .footer {
+      background: #2d3748;
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    
+    .scroll-indicator {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #667eea;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 30px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      font-weight: 600;
+      animation: bounce 2s infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+    
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 30px;
+      margin: 40px 0;
+    }
+    
+    .stat-card {
+      text-align: center;
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .stat-number {
+      font-size: 48px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+    
+    .stat-label {
+      font-size: 16px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>📸 LongSS Extension Test Page</h1>
+    <p>Test all screenshot capture modes on this page</p>
+  </div>
+  
+  <div class="section">
+    <h2>🎯 Testing Instructions</h2>
+    <p>This page is designed to test all three capture modes of the LongSS extension:</p>
+    
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">📄</div>
+        <h3>1. Full Page Screenshot</h3>
+        <p>Click the "Full Page Screenshot" button to capture this entire page from top to bottom. The extension will automatically scroll and stitch all sections together.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="icon">🖼️</div>
+        <h3>2. Framed Screenshot</h3>
+        <p>Click the "Framed Screenshot" button to capture the current viewport with a stylish frame and shadow effect. Perfect for presentations!</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="icon">📜</div>
+        <h3>3. Scroll Recording</h3>
+        <p>Hold down the "Hold to Record Scroll" button and scroll down this page. Release when done. The extension will stitch your scrolled content into one image.</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>📊 Statistics</h2>
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number">3</div>
+        <div class="stat-label">Capture Modes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">10s</div>
+        <div class="stat-label">Max Recording Time</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">100%</div>
+        <div class="stat-label">Browser Compatible</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>🚀 Features</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <h3>Automatic Stitching</h3>
+        <p>The extension automatically captures multiple screenshots and stitches them together seamlessly, ensuring no content is missed.</p>
+      </div>
+      <div class="timeline-item">
+        <h3>High Quality Output</h3>
+        <p>All screenshots are captured in high resolution PNG format, preserving image quality and text clarity.</p>
+      </div>
+      <div class="timeline-item">
+        <h3>Visual Feedback</h3>
+        <p>Real-time progress indicators and status messages keep you informed throughout the capture process.</p>
+      </div>
+      <div class="timeline-item">
+        <h3>No Data Collection</h3>
+        <p>Your privacy is protected - all processing happens locally on your device with no external data transmission.</p>
+      </div>
+      <div class="timeline-item">
+        <h3>Cross-Browser Support</h3>
+        <p>Works seamlessly across Chrome, Edge, Brave, Opera, and Firefox (with minor adjustments).</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>💻 Code Example</h2>
+    <p>Here's a sample of how the extension captures screenshots:</p>
+    <div class="code-block">
+// Capture full page screenshot
+async function captureFullPage(tab, dimensions) {
+  const screenshots = [];
+  const viewportHeight = dimensions.viewportHeight;
+  const totalHeight = dimensions.scrollHeight;
+  const numScreens = Math.ceil(totalHeight / viewportHeight);
+  
+  for (let i = 0; i < numScreens; i++) {
+    const scrollTop = i * viewportHeight;
+    await scrollToPosition(tab, scrollTop);
+    const dataUrl = await captureVisibleTab(tab);
+    screenshots.push({ dataUrl, offsetY: scrollTop });
+  }
+  
+  return stitchImages(screenshots, dimensions);
+}
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>✨ More Content for Testing</h2>
+    <p>This section provides additional content to test the full page and scroll capture features. Scroll down to see more!</p>
+    
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">⚡</div>
+        <h3>Fast Performance</h3>
+        <p>Optimized algorithms ensure quick capture times even for very long pages.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🎨</div>
+        <h3>Beautiful UI</h3>
+        <p>Modern, intuitive interface with smooth animations and gradients.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔒</div>
+        <h3>Secure</h3>
+        <p>Minimal permissions and no external data transmission ensure your security.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">📱</div>
+        <h3>Responsive</h3>
+        <p>Works perfectly on all screen sizes and resolutions.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🌍</div>
+        <h3>Universal</h3>
+        <p>Compatible with virtually any website or web application.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🎯</div>
+        <h3>Accurate</h3>
+        <p>Pixel-perfect captures without missing any content.</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>🎓 Use Cases</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <h3>Documentation</h3>
+        <p>Capture full documentation pages, tutorials, and guides for offline reference or sharing with team members.</p>
+      </div>
+      <div class="timeline-item">
+        <h3>Social Media</h3>
+        <p>Record entire Twitter threads, Instagram stories, or Facebook timelines in a single image.</p>
+      </div>
+      <div class="timeline-item">
+        <h3>Research</h3>
+        <p>Archive web content for academic research, preserving layout and formatting perfectly.</p>
+      </div>
+      <div class="timeline-item">
+        <h3>Bug Reports</h3>
+        <p>Capture complete error states and UI issues to help developers reproduce and fix problems.</p>
+      </div>
+      <div class="timeline-item">
+        <h3>Design Portfolios</h3>
+        <p>Showcase your web designs with framed screenshots that look professional and polished.</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>📋 Testing Checklist</h2>
+    <p>Make sure to test these scenarios:</p>
+    <ul style="list-style-position: inside; margin-top: 20px; line-height: 2;">
+      <li>✅ Full page capture from top to bottom</li>
+      <li>✅ Framed screenshot of current viewport</li>
+      <li>✅ Scroll recording with hold button (scroll down slowly)</li>
+      <li>✅ Scroll recording with hold button (scroll down quickly)</li>
+      <li>✅ Auto-stop at 10 seconds during scroll recording</li>
+      <li>✅ Manual stop by releasing button early</li>
+      <li>✅ Progress indicator visibility during recording</li>
+      <li>✅ Status messages display correctly</li>
+      <li>✅ Downloaded files are properly named</li>
+      <li>✅ Image quality is satisfactory</li>
+      <li>✅ No missing content in stitched images</li>
+      <li>✅ Extension icon and popup display correctly</li>
+    </ul>
+  </div>
+  
+  <div class="footer">
+    <h2>🎉 Thanks for Testing LongSS!</h2>
+    <p>If you found any issues or have suggestions, please report them on GitHub.</p>
+    <p style="margin-top: 20px; opacity: 0.8;">Made with ❤️ for the web community</p>
+  </div>
+  
+  <div class="scroll-indicator">
+    👆 Try Scroll Recording
+  </div>
+</body>
+</html>

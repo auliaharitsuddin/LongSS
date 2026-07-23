@@ -1,0 +1,35 @@
+{
+  "name": "longss-extension",
+  "version": "1.0.0",
+  "description": "Long screenshot browser extension with full page, framed, and scrolled recording modes",
+  "scripts": {
+    "icons": "node create-icons.js",
+    "test": "echo 'Open test.html in your browser to test the extension'",
+    "pack": "npm run pack:chrome && npm run pack:firefox",
+    "pack:chrome": "powershell Compress-Archive -Path ./* -DestinationPath ../LongSS-chrome.zip -Force",
+    "pack:firefox": "powershell Compress-Archive -Path ./* -DestinationPath ../LongSS-firefox.zip -Force"
+  },
+  "keywords": [
+    "screenshot",
+    "long-screenshot",
+    "full-page",
+    "scrolling",
+    "capture",
+    "browser-extension",
+    "chrome-extension",
+    "edge-extension"
+  ],
+  "author": "LongSS Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/LongSS.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/LongSS/issues"
+  },
+  "homepage": "https://github.com/yourusername/LongSS#readme",
+  "devDependencies": {
+    "sharp": "^0.33.0"
+  }
+}

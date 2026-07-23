@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Create Icons</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #667eea;
+      margin-bottom: 20px;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .icons {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .icon-item {
+      text-align: center;
+    }
+    canvas {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .info {
+      margin-top: 10px;
+      padding: 15px;
+      background: #f0f4ff;
+      border-radius: 6px;
+      color: #667eea;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📸 LongSS Icon Generator</h1>
+    <button onclick="generateIcons()">Generate Icons</button>
+    <div class="info" id="info">Click the button to generate all icon sizes</div>
+    <div class="icons" id="icons"></div>
+  </div>
+
+  <script>
+    function generateIcons() {
+      const sizes = [16, 32, 48, 128];
+      const iconsDiv = document.getElementById('icons');
+      const infoDiv = document.getElementById('info');
+      iconsDiv.innerHTML = '';
+      
+      sizes.forEach(size => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        
+        // Background gradient
+        const gradient = ctx.createLinearGradient(0, 0, size, size);
+        gradient.addColorStop(0, '#667eea');
+        gradient.addColorStop(1, '#764ba2');
+        ctx.fillStyle = gradient;
+        
+        // Rounded rectangle
+        const radius = size * 0.188; // 24/128 = 0.188
+        ctx.beginPath();
+        ctx.roundRect(0, 0, size, size, radius);
+        ctx.fill();
+        
+        // Camera body
+        ctx.fillStyle = 'white';
+        const bodyX = size * 0.156;
+        const bodyY = size * 0.3125;
+        const bodyW = size * 0.688;
+        const bodyH = size * 0.469;
+        const bodyR = size * 0.0625;
+        ctx.beginPath();
+        ctx.roundRect(bodyX, bodyY, bodyW, bodyH, bodyR);
+        ctx.fill();
+        
+        // Lens outer
+        ctx.fillStyle = '#667eea';
+        const lensX = size * 0.5;
+        const lensY = size * 0.547;
+        const lensR = size * 0.156;
+        ctx.beginPath();
+        ctx.arc(lensX, lensY, lensR, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Lens inner highlight
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.beginPath();
+        ctx.arc(lensX, lensY, lensR * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Viewfinder
+        ctx.fillStyle = '#667eea';
+        const vfX = size * 0.664;
+        const vfY = size * 0.375;
+        const vfW = size * 0.109;
+        const vfH = size * 0.078;
+        const vfR = size * 0.016;
+        ctx.beginPath();
+        ctx.roundRect(vfX, vfY, vfW, vfH, vfR);
+        ctx.fill();
+        
+        // Flash
+        ctx.fillStyle = '#fbbf24';
+        const flashX = size * 0.273;
+        const flashY = size * 0.391;
+        const flashR = size * 0.031;
+        ctx.beginPath();
+        ctx.arc(flashX, flashY, flashR, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Create download link
+        const iconItem = document.createElement('div');
+        iconItem.className = 'icon-item';
+        
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `icon${size}.png`;
+        link.appendChild(canvas);
+        
+        const label = document.createElement('div');
+        label.textContent = `${size}x${size}`;
+        label.style.marginTop = '5px';
+        label.style.fontSize = '12px';
+        
+        iconItem.appendChild(link);
+        iconItem.appendChild(label);
+        iconsDiv.appendChild(iconItem);
+      });
+      
+      infoDiv.innerHTML = '✅ Icons generated! Click on each icon to download.';
+      infoDiv.style.background = '#d4edda';
+      infoDiv.style.color = '#155724';
+    }
+  </script>
+</body>
+</html>

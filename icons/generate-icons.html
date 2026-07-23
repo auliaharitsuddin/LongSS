@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Icons</title>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script>
+    // Generate icons programmatically
+    const sizes = [16, 32, 48, 128];
+    
+    sizes.forEach(size => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      // Background gradient
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#667eea');
+      gradient.addColorStop(1, '#764ba2');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      
+      // Camera icon
+      ctx.fillStyle = 'white';
+      const padding = size * 0.2;
+      const width = size - (padding * 2);
+      const height = width * 0.7;
+      const x = padding;
+      const y = (size - height) / 2;
+      const radius = size * 0.1;
+      
+      // Camera body
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, radius);
+      ctx.fill();
+      
+      // Lens
+      ctx.fillStyle = '#667eea';
+      const lensSize = width * 0.4;
+      const lensX = x + (width - lensSize) / 2;
+      const lensY = y + (height - lensSize) / 2;
+      ctx.beginPath();
+      ctx.arc(lensX + lensSize/2, lensY + lensSize/2, lensSize/2, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Download
+      const link = document.createElement('a');
+      link.download = `icon${size}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+    });
+    
+    document.body.innerHTML = '<p>Icons generated! Check your downloads.</p>';
+  </script>
+</body>
+</html>

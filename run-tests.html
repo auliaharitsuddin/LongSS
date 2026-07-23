@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LongSS - Automated Test Runner</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 40px;
+      background: #f5f7fa;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 32px;
+    }
+
+    .subtitle {
+      color: #718096;
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+
+    .test-section {
+      margin-bottom: 40px;
+    }
+
+    .test-section h2 {
+      color: #2d3748;
+      margin-bottom: 20px;
+      font-size: 24px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .test-case {
+      background: #f7fafc;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border-left: 4px solid #cbd5e0;
+      transition: all 0.3s ease;
+    }
+
+    .test-case:hover {
+      border-left-color: #667eea;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .test-case h3 {
+      color: #2d3748;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .test-case p {
+      color: #4a5568;
+      margin-bottom: 15px;
+      line-height: 1.6;
+    }
+
+    .test-steps {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+
+    .test-steps ol {
+      padding-left: 20px;
+    }
+
+    .test-steps li {
+      margin-bottom: 8px;
+      color: #4a5568;
+    }
+
+    .test-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+    }
+
+    .btn-success {
+      background: #48bb78;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #38a169;
+    }
+
+    .btn-danger {
+      background: #f56565;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #e53e3e;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-pending {
+      background: #edf2f7;
+      color: #718096;
+    }
+
+    .status-pass {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .status-fail {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .summary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 40px;
+    }
+
+    .summary h2 {
+      color: white;
+      border: none;
+      margin-bottom: 20px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 30px;
+      justify-content: space-around;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 48px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .instructions {
+      background: #fff5e6;
+      border-left: 4px solid #ed8936;
+      padding: 20px;
+      border-radius: 6px;
+      margin-bottom: 30px;
+    }
+
+    .instructions h3 {
+      color: #ed8936;
+      margin-bottom: 10px;
+    }
+
+    .instructions p {
+      color: #744210;
+      line-height: 1.6;
+    }
+
+    .checklist {
+      list-style: none;
+      padding: 0;
+    }
+
+    .checklist li {
+      padding: 10px;
+      margin-bottom: 5px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .checklist input[type="checkbox"] {
+      margin-right: 10px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 15px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: white;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 LongSS Test Runner</h1>
+    <p class="subtitle">Interactive testing suite for the LongSS extension</p>
+
+    <div class="instructions">
+      <h3>⚠️ Before You Begin</h3>
+      <p><strong>Make sure the LongSS extension is installed and enabled in your browser.</strong><br>
+      This test page helps you systematically verify all features work correctly.</p>
+    </div>
+
+    <div class="summary">
+      <h2>Test Progress</h2>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-number" id="totalTests">15</div>
+          <div class="stat-label">Total Tests</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number" id="passedTests">0</div>
+          <div class="stat-label">Passed</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number" id="failedTests">0</div>
+          <div class="stat-label">Failed</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number" id="completionRate">0%</div>
+          <div class="stat-label">Complete</div>
+        </div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <!-- Test Section 1: Installation -->
+    <div class="test-section">
+      <h2>1. Installation Verification</h2>
+      
+      <div class="test-case" data-test="install-1">
+        <h3>Test 1.1: Extension Icon Visible</h3>
+        <p>Verify that the LongSS icon appears in your browser toolbar.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Look at your browser toolbar (top-right area)</li>
+            <li>Find the LongSS camera icon (may be in extension menu)</li>
+            <li>Pin it if needed by clicking the puzzle piece icon</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+
+      <div class="test-case" data-test="install-2">
+        <h3>Test 1.2: Popup Opens</h3>
+        <p>Confirm that clicking the extension icon opens the popup interface.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Click the LongSS icon in your toolbar</li>
+            <li>Verify the popup window appears</li>
+            <li>Check that all three buttons are visible</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Section 2: Full Page Screenshot -->
+    <div class="test-section">
+      <h2>2. Full Page Screenshot</h2>
+      
+      <div class="test-case" data-test="full-1">
+        <h3>Test 2.1: Short Page Capture</h3>
+        <p>Test capturing a page shorter than one viewport.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Navigate to a simple short page (e.g., google.com)</li>
+            <li>Click LongSS icon → "Full Page Screenshot"</li>
+            <li>Verify image downloads immediately</li>
+            <li>Open image and check it's complete</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+
+      <div class="test-case" data-test="full-2">
+        <h3>Test 2.2: Long Page Capture</h3>
+        <p>Test capturing a page with multiple viewports (this page!).</p>
+        <div class="test-steps">
+          <ol>
+            <li>Click LongSS icon → "Full Page Screenshot"</li>
+            <li>Wait for automatic scrolling and capture</li>
+            <li>Verify download completes</li>
+            <li>Open image and verify all content is visible (top to bottom)</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+
+      <div class="test-case" data-test="full-3">
+        <h3>Test 2.3: Stitching Quality</h3>
+        <p>Verify there are no gaps or overlaps in the stitched image.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Open the captured full-page screenshot</li>
+            <li>Look for visible seams or gaps</li>
+            <li>Check text continuity across boundaries</li>
+            <li>Verify no content duplication</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Section 3: Framed Screenshot -->
+    <div class="test-section">
+      <h2>3. Framed Screenshot</h2>
+      
+      <div class="test-case" data-test="framed-1">
+        <h3>Test 3.1: Frame Application</h3>
+        <p>Test that the frame and shadow are applied correctly.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Position this page to show a nice section</li>
+            <li>Click LongSS icon → "Framed Screenshot"</li>
+            <li>Open downloaded image</li>
+            <li>Verify white frame around screenshot</li>
+            <li>Verify shadow effect is visible</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+
+      <div class="test-case" data-test="framed-2">
+        <h3>Test 3.2: Viewport Only</h3>
+        <p>Confirm only visible viewport is captured, not full page.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Scroll to middle of this page</li>
+            <li>Click "Framed Screenshot"</li>
+            <li>Open image</li>
+            <li>Verify it shows only what was visible, not full page</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Section 4: Scroll Recording -->
+    <div class="test-section">
+      <h2>4. Scroll Recording</h2>
+      
+      <div class="test-case" data-test="scroll-1">
+        <h3>Test 4.1: Basic Hold & Scroll</h3>
+        <p>Test the hold-to-record button with scrolling.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Scroll to top of this page</li>
+            <li>Click LongSS icon</li>
+            <li><strong>Hold down</strong> "Hold to Record Scroll" button</li>
+            <li>While holding, scroll down slowly (3-4 sections)</li>
+            <li>Release button</li>
+            <li>Wait for processing and download</li>
+            <li>Open image and verify scrolled content is captured</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+
+      <div class="test-case" data-test="scroll-2">
+        <h3>Test 4.2: Recording Indicator</h3>
+        <p>Verify the red recording indicator appears during capture.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Hold "Hold to Record Scroll" button</li>
+            <li>Look for red "Recording..." indicator at top of page</li>
+            <li>Verify it has pulsing animation</li>
+            <li>Release button</li>
+            <li>Verify indicator disappears</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+
+      <div class="test-case" data-test="scroll-3">
+        <h3>Test 4.3: Progress Bar</h3>
+        <p>Test that progress bar fills during recording.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Hold the record button</li>
+            <li>Watch the progress bar in popup</li>
+            <li>Verify it fills from 0% to show elapsed time</li>
+            <li>Release button before 10 seconds</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+
+      <div class="test-case" data-test="scroll-4">
+        <h3>Test 4.4: 10-Second Auto-Stop</h3>
+        <p>Verify recording stops automatically at 10 seconds.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Hold record button continuously</li>
+            <li>Keep holding for 10+ seconds</li>
+            <li>Verify recording stops automatically at 10s</li>
+            <li>Verify image downloads automatically</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+
+      <div class="test-case" data-test="scroll-5">
+        <h3>Test 4.5: Early Release</h3>
+        <p>Test stopping recording before 10 seconds.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Hold button and scroll for 2-3 seconds only</li>
+            <li>Release button</li>
+            <li>Verify shorter screenshot downloads</li>
+            <li>Open and verify it captured only scrolled amount</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Section 5: UI & UX -->
+    <div class="test-section">
+      <h2>5. User Interface</h2>
+      
+      <div class="test-case" data-test="ui-1">
+        <h3>Test 5.1: Status Messages</h3>
+        <p>Verify status messages display correctly.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Trigger any capture mode</li>
+            <li>Watch for status messages in popup</li>
+            <li>Verify "Processing..." or similar appears</li>
+            <li>Verify success message appears when complete</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+
+      <div class="test-case" data-test="ui-2">
+        <h3>Test 5.2: Button States</h3>
+        <p>Test button disabled/enabled states.</p>
+        <div class="test-steps">
+          <ol>
+            <li>Start a capture</li>
+            <li>Verify buttons become disabled during capture</li>
+            <li>Wait for completion</li>
+            <li>Verify buttons re-enable after completion</li>
+          </ol>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Section 6: File Output -->
+    <div class="test-section">
+      <h2>6. File Output Quality</h2>
+      
+      <div class="test-case" data-test="output-1">
+        <h3>Test 6.1: Image Quality</h3>
+        <p>Verify captured images have good quality.</p>
+        <div class="test-steps">
+          <ul class="checklist">
+            <li><input type="checkbox"> Text is readable and clear</li>
+            <li><input type="checkbox"> Images are not pixelated</li>
+            <li><input type="checkbox"> Colors are accurate</li>
+            <li><input type="checkbox"> No compression artifacts</li>
+            <li><input type="checkbox"> Proper resolution maintained</li>
+          </ul>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+
+      <div class="test-case" data-test="output-2">
+        <h3>Test 6.2: Filename Convention</h3>
+        <p>Check that files are named correctly.</p>
+        <div class="test-steps">
+          <ul class="checklist">
+            <li><input type="checkbox"> Full page: starts with "longss-fullpage-"</li>
+            <li><input type="checkbox"> Framed: starts with "longss-framed-"</li>
+            <li><input type="checkbox"> Scroll: starts with "longss-scroll-"</li>
+            <li><input type="checkbox"> All have timestamp</li>
+            <li><input type="checkbox"> All have .png extension</li>
+          </ul>
+        </div>
+        <div class="test-controls">
+          <span class="status status-pending">Pending</span>
+          <button class="btn btn-success" onclick="markTest(this, 'pass')">✓ Pass</button>
+          <button class="btn btn-danger" onclick="markTest(this, 'fail')">✗ Fail</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary" style="margin-top: 40px;">
+      <h2>✅ Final Checklist</h2>
+      <ul class="checklist">
+        <li><input type="checkbox"> All tests completed</li>
+        <li><input type="checkbox"> No critical failures</li>
+        <li><input type="checkbox"> Extension works as expected</li>
+        <li><input type="checkbox"> Image quality is acceptable</li>
+        <li><input type="checkbox"> All features functional</li>
+        <li><input type="checkbox"> Ready for use/distribution</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    let totalTests = 15;
+    let passedTests = 0;
+    let failedTests = 0;
+
+    function markTest(button, result) {
+      const testCase = button.closest('.test-case');
+      const statusEl = testCase.querySelector('.status');
+      const controls = testCase.querySelector('.test-controls');
+      
+      // Update status
+      statusEl.className = 'status';
+      if (result === 'pass') {
+        statusEl.classList.add('status-pass');
+        statusEl.textContent = 'Pass ✓';
+        testCase.style.borderLeftColor = '#48bb78';
+        passedTests++;
+      } else {
+        statusEl.classList.add('status-fail');
+        statusEl.textContent = 'Fail ✗';
+        testCase.style.borderLeftColor = '#f56565';
+        failedTests++;
+      }
+      
+      // Disable buttons
+      controls.querySelectorAll('button').forEach(btn => btn.disabled = true);
+      
+      // Update summary
+      updateSummary();
+    }
+
+    function updateSummary() {
+      document.getElementById('passedTests').textContent = passedTests;
+      document.getElementById('failedTests').textContent = failedTests;
+      
+      const completed = passedTests + failedTests;
+      const percentage = Math.round((completed / totalTests) * 100);
+      
+      document.getElementById('completionRate').textContent = percentage + '%';
+      document.getElementById('progressFill').style.width = percentage + '%';
+      
+      // Celebrate if all passed
+      if (completed === totalTests && failedTests === 0) {
+        setTimeout(() => {
+          alert('🎉 Congratulations! All tests passed! LongSS is working perfectly.');
+        }, 500);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LongSS</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📸 LongSS</h1>
+      <p class="subtitle">Long Screenshot Tool</p>
+    </header>
+    
+    <div class="buttons">
+      <button id="fullPageBtn" class="btn btn-primary">
+        <span class="icon">📄</span>
+        <span class="text">Full Page Screenshot</span>
+      </button>
+      
+      <button id="framedBtn" class="btn btn-secondary">
+        <span class="icon">🖼️</span>
+        <span class="text">Framed Screenshot</span>
+      </button>
+      
+      <button id="scrollBtn" class="btn btn-accent" data-recording="false">
+        <span class="icon">📜</span>
+        <span class="text">Hold to Record Scroll</span>
+        <span class="hint">(Max 10s)</span>
+      </button>
+    </div>
+    
+    <div id="status" class="status hidden">
+      <div class="spinner"></div>
+      <span id="statusText">Processing...</span>
+    </div>
+    
+    <div id="progress" class="progress hidden">
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+      <span id="progressText" class="progress-text">0%</span>
+    </div>
+    
+    <footer>
+      <p class="tip">💡 Tip: Use scroll recording for dynamic content like social media feeds</p>
+    </footer>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
