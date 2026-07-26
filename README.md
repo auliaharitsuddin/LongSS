@@ -78,21 +78,24 @@ Record screenshots while scrolling through dynamic content:
 
 ### Framed Screenshot
 1. Click the LongSS extension icon
-2. Click the "Framed Screenshot" button
-3. A styled screenshot with frame and shadow will download immediately
+2. Click "Framed Screenshot" to expand the frame options (style, padding, rounded corners)
+3. Click "Ambil Screenshot Berbingkai" to capture with your chosen frame
+4. Preview the result, then Save or Discard
 
-### Scrolled Recording
+### Scrolled Recording (Automatic)
 1. Click the LongSS extension icon
-2. **Hold down** the "Hold to Record Scroll" button
-3. While holding, scroll through the content you want to capture
-4. **Release** the button when finished (or it auto-stops at 10 seconds)
-5. The extension processes and downloads your scrolled screenshot
+2. Click "Mulai Rekam Scroll (Otomatis)" — the extension scrolls the page for you,
+   capturing as it goes and waiting for lazy-loaded content (e.g. infinite-scroll feeds)
+3. Click the button again in the popup, or the floating "Stop" button on the page,
+   to end early — otherwise it stops automatically once it reaches the bottom or ~25s
+4. Preview the stitched result, then Save or Discard
 
 **Tips for Scroll Recording:**
-- Works best on pages with smooth scrolling
-- Great for capturing social media feeds, chats, and timelines
-- Maximum recording duration: 10 seconds
-- The recording indicator shows at the top of the page while recording
+- You don't need to scroll manually — the popup would close if you tried, since it loses
+  focus as soon as the page is interacted with. The extension drives the scrolling itself.
+- Great for capturing social media feeds, chats, timelines, and infinite-scroll pages
+- Very long/infinite pages are capped to a safe canvas size — the preview will flag if a
+  result was truncated
 
 ## 🎯 Use Cases
 

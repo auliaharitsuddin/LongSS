@@ -1,6 +1,12 @@
 // UI Elements
 const fullPageBtn = document.getElementById('fullPageBtn');
+const framedToggle = document.getElementById('framedToggle');
 const framedBtn = document.getElementById('framedBtn');
+const frameOptions = document.getElementById('frameOptions');
+const frameStyleInput = document.getElementById('frameStyle');
+const framePaddingInput = document.getElementById('framePadding');
+const frameRoundedInput = document.getElementById('frameRounded');
+
 const scrollBtn = document.getElementById('scrollBtn');
 const status = document.getElementById('status');
 const statusText = document.getElementById('statusText');
@@ -8,11 +14,44 @@ const progress = document.getElementById('progress');
 const progressFill = document.getElementById('progressFill');
 const progressText = document.getElementById('progressText');
 
-let scrollPressTimer = null;
-let scrollStartTime = null;
-const MAX_RECORD_TIME = 10000; // 10 seconds
+const preview = document.getElementById('preview');
+const previewImg = document.getElementById('previewImg');
+const truncatedNotice = document.getElementById('truncatedNotice');
+const saveBtn = document.getElementById('saveBtn');
+const discardBtn = document.getElementById('discardBtn');
 
-// Helper functions
+const settingsToggle = document.getElementById('settingsToggle');
+const settingsPanel = document.getElementById('settingsPanel');
+const askSaveLocationInput = document.getElementById('askSaveLocation');
+const downloadFolderInput = document.getElementById('downloadFolder');
+
+let pendingCapture = null; // { dataUrl, filename, type }
+let scrollCaptureActive = false;
+
+// ---------- Settings ----------
+chrome.storage.sync.get({ askSaveLocation: false, downloadFolder: '' }, (settings) => {
+  askSaveLocationInput.checked = settings.askSaveLocation;
+  downloadFolderInput.value = settings.downloadFolder;
+});
+
+settingsToggle.addEventListener('click', () => {
+  settingsPanel.classList.toggle('hidden');
+});
+
+askSaveLocationInput.addEventListener('change', () => {
+  chrome.storage.sync.set({ askSaveLocation: askSaveLocationInput.checked });
+});
+
+downloadFolderInput.addEventListener('change', () => {
+  chrome.storage.sync.set({ downloadFolder: downloadFolderInput.value.trim() });
+});
+
+// ---------- Frame options toggle ----------
+framedToggle.addEventListener('click', () => {
+  frameOptions.classList.toggle('hidden');
+});
+
+// ---------- Helper functions ----------
 function showStatus(message) {
   statusText.textContent = message;
   status.classList.remove('hidden');
@@ -23,10 +62,10 @@ function hideStatus() {
   status.classList.add('hidden');
 }
 
-function showProgress(percent) {
+function showProgress(percent, label) {
   progress.classList.remove('hidden');
   progressFill.style.width = `${percent}%`;
-  progressText.textContent = `${Math.round(percent)}%`;
+  progressText.textContent = label || `${Math.round(percent)}%`;
 }
 
 function hideProgress() {
@@ -35,14 +74,38 @@ function hideProgress() {
 
 function disableButtons() {
   fullPageBtn.disabled = true;
+  framedToggle.disabled = true;
   framedBtn.disabled = true;
-  scrollBtn.disabled = true;
 }
 
 function enableButtons() {
   fullPageBtn.disabled = false;
+  framedToggle.disabled = false;
   framedBtn.disabled = false;
-  scrollBtn.disabled = false;
+}
+
+function showPreview(dataUrl, filename, type, truncated) {
+  pendingCapture = { dataUrl, filename, type };
+  previewImg.src = dataUrl;
+  truncatedNotice.classList.toggle('hidden', !truncated);
+  preview.classList.remove('hidden');
+}
+
+function hidePreview() {
+  pendingCapture = null;
+  previewImg.src = '';
+  preview.classList.add('hidden');
+}
+
+function setScrollUiRecording(recording) {
+  scrollCaptureActive = recording;
+  scrollBtn.classList.toggle('recording', recording);
+  scrollBtn.querySelector('.text').textContent = recording
+    ? 'Stop Rekam Scroll'
+    : 'Mulai Rekam Scroll (Otomatis)';
+  scrollBtn.querySelector('.hint').textContent = recording
+    ? 'Sedang merekam... klik untuk berhenti'
+    : 'Klik lagi atau tombol Stop di halaman untuk berhenti';
 }
 
 // Get active tab
@@ -51,31 +114,84 @@ async function getActiveTab() {
   return tab;
 }
 
-// Full Page Screenshot
+// Re-sync UI in case the popup was reopened while an auto-scroll capture
+// (which keeps running in the background) is already in progress.
+chrome.runtime.sendMessage({ action: 'getScrollCaptureState' }, (response) => {
+  if (response && response.active) {
+    disableButtons();
+    setScrollUiRecording(true);
+    showStatus('Merekam scroll otomatis...');
+  }
+});
+
+// Area-selection (framed) and scroll capture both require interacting with
+// the page, which closes this popup. Recover any result that finished while
+// the popup was closed.
+chrome.runtime.sendMessage({ action: 'getPendingCapture' }, (response) => {
+  if (response && response.dataUrl) {
+    hideStatus();
+    enableButtons();
+    showPreview(response.dataUrl, response.filename, response.type, response.truncated);
+  }
+});
+
+// ---------- Message listener (single, permanent) ----------
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action === 'captureReady') {
+    hideStatus();
+    hideProgress();
+    enableButtons();
+    setScrollUiRecording(false);
+    showPreview(message.dataUrl, message.filename, message.type, message.truncated);
+  } else if (message.action === 'scrollCaptureStarted') {
+    setScrollUiRecording(true);
+    showStatus('Merekam scroll otomatis...');
+  } else if (message.action === 'scrollCaptureProgress') {
+    showProgress(0, `${message.screens} bagian direkam (${Math.round(message.elapsed / 1000)}s)`);
+  } else if (
+    message.action === 'fullPageComplete' ||
+    message.action === 'framedComplete' ||
+    message.action === 'scrollComplete'
+  ) {
+    hideStatus();
+    hideProgress();
+    enableButtons();
+    setScrollUiRecording(false);
+    if (message.error) {
+      showStatus(`✗ ${message.error}`);
+      setTimeout(hideStatus, 3500);
+    }
+  }
+});
+
+// ---------- Preview actions ----------
+saveBtn.addEventListener('click', () => {
+  if (!pendingCapture) return;
+  chrome.runtime.sendMessage({
+    action: 'downloadImage',
+    dataUrl: pendingCapture.dataUrl,
+    filename: pendingCapture.filename,
+    saveAs: askSaveLocationInput.checked
+  });
+  hidePreview();
+  showStatus('✓ Screenshot disimpan!');
+  setTimeout(hideStatus, 2000);
+});
+
+discardBtn.addEventListener('click', () => {
+  hidePreview();
+});
+
+// ---------- Full Page Screenshot ----------
 fullPageBtn.addEventListener('click', async () => {
   try {
+    hidePreview();
     disableButtons();
-    showStatus('Capturing full page...');
-    
+    showStatus('Mengambil screenshot full page...');
+
     const tab = await getActiveTab();
-    
-    // Inject and execute capture script
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: captureFullPage
-    });
-    
-    // Listen for completion
-    chrome.runtime.onMessage.addListener(function listener(message) {
-      if (message.action === 'fullPageComplete') {
-        chrome.runtime.onMessage.removeListener(listener);
-        hideStatus();
-        enableButtons();
-        showStatus('✓ Screenshot saved!');
-        setTimeout(hideStatus, 2000);
-      }
-    });
-    
+    chrome.runtime.sendMessage({ action: 'captureFullPage', tabId: tab.id });
+
   } catch (error) {
     console.error('Error:', error);
     hideStatus();
@@ -84,130 +200,48 @@ fullPageBtn.addEventListener('click', async () => {
   }
 });
 
-// Framed Screenshot
+// ---------- Framed Screenshot (Snipping-Tool style area selection) ----------
 framedBtn.addEventListener('click', async () => {
   try {
-    disableButtons();
-    showStatus('Capturing framed screenshot...');
-    
+    hidePreview();
     const tab = await getActiveTab();
-    
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: captureFramed
-    });
-    
-    chrome.runtime.onMessage.addListener(function listener(message) {
-      if (message.action === 'framedComplete') {
-        chrome.runtime.onMessage.removeListener(listener);
-        hideStatus();
-        enableButtons();
-        showStatus('✓ Screenshot saved!');
-        setTimeout(hideStatus, 2000);
+    showStatus('Pilih area di halaman (seret mouse)... popup akan tertutup');
+
+    chrome.runtime.sendMessage({
+      action: 'startAreaSelection',
+      tabId: tab.id,
+      frameOptions: {
+        style: frameStyleInput.value,
+        padding: framePaddingInput.value,
+        rounded: frameRoundedInput.checked
       }
     });
-    
+
   } catch (error) {
     console.error('Error:', error);
     hideStatus();
-    enableButtons();
-    alert('Error capturing screenshot: ' + error.message);
+    alert('Error starting area selection: ' + error.message);
   }
 });
 
-// Scroll Screenshot (Hold to record)
-scrollBtn.addEventListener('mousedown', async () => {
+// ---------- Scroll Screenshot (auto, click to start/stop) ----------
+scrollBtn.addEventListener('click', async () => {
   try {
+    if (scrollCaptureActive) {
+      chrome.runtime.sendMessage({ action: 'stopScrollCaptureRequest' });
+      showStatus('Memproses hasil scroll...');
+      return;
+    }
+
+    hidePreview();
     const tab = await getActiveTab();
-    
-    // Start recording
-    scrollStartTime = Date.now();
-    scrollBtn.classList.add('recording');
-    scrollBtn.querySelector('.text').textContent = 'Recording... (Release to stop)';
     disableButtons();
-    scrollBtn.disabled = false;
-    
-    // Send start message
-    await chrome.tabs.sendMessage(tab.id, { action: 'startScrollCapture' });
-    
-    // Progress updater
-    const progressInterval = setInterval(() => {
-      const elapsed = Date.now() - scrollStartTime;
-      const percent = Math.min((elapsed / MAX_RECORD_TIME) * 100, 100);
-      showProgress(percent);
-      
-      if (elapsed >= MAX_RECORD_TIME) {
-        clearInterval(progressInterval);
-        scrollBtn.dispatchEvent(new Event('mouseup'));
-      }
-    }, 100);
-    
-    // Store interval ID for cleanup
-    scrollBtn.dataset.intervalId = progressInterval;
-    
+    chrome.runtime.sendMessage({ action: 'startScrollCapture', tabId: tab.id });
+
   } catch (error) {
     console.error('Error:', error);
     alert('Error starting scroll capture: ' + error.message);
-    resetScrollButton();
-  }
-});
-
-scrollBtn.addEventListener('mouseup', async () => {
-  if (!scrollBtn.classList.contains('recording')) return;
-  
-  try {
-    const tab = await getActiveTab();
-    
-    // Clear progress interval
-    if (scrollBtn.dataset.intervalId) {
-      clearInterval(parseInt(scrollBtn.dataset.intervalId));
-      delete scrollBtn.dataset.intervalId;
-    }
-    
-    hideProgress();
-    showStatus('Processing scrolled screenshot...');
-    
-    // Send stop message
-    await chrome.tabs.sendMessage(tab.id, { action: 'stopScrollCapture' });
-    
-    // Listen for completion
-    chrome.runtime.onMessage.addListener(function listener(message) {
-      if (message.action === 'scrollComplete') {
-        chrome.runtime.onMessage.removeListener(listener);
-        hideStatus();
-        enableButtons();
-        resetScrollButton();
-        showStatus('✓ Screenshot saved!');
-        setTimeout(hideStatus, 2000);
-      }
-    });
-    
-  } catch (error) {
-    console.error('Error:', error);
-    hideStatus();
     enableButtons();
-    resetScrollButton();
-    alert('Error stopping capture: ' + error.message);
+    setScrollUiRecording(false);
   }
 });
-
-// Also handle mouse leaving the button
-scrollBtn.addEventListener('mouseleave', () => {
-  if (scrollBtn.classList.contains('recording')) {
-    scrollBtn.dispatchEvent(new Event('mouseup'));
-  }
-});
-
-function resetScrollButton() {
-  scrollBtn.classList.remove('recording');
-  scrollBtn.querySelector('.text').textContent = 'Hold to Record Scroll';
-}
-
-// Injected functions (these run in the page context)
-function captureFullPage() {
-  chrome.runtime.sendMessage({ action: 'captureFullPage' });
-}
-
-function captureFramed() {
-  chrome.runtime.sendMessage({ action: 'captureFramed' });
-}

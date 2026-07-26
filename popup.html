@@ -18,19 +18,45 @@
         <span class="icon">📄</span>
         <span class="text">Full Page Screenshot</span>
       </button>
-      
-      <button id="framedBtn" class="btn btn-secondary">
+
+      <button id="framedToggle" class="btn btn-secondary" type="button">
         <span class="icon">🖼️</span>
         <span class="text">Framed Screenshot</span>
       </button>
-      
-      <button id="scrollBtn" class="btn btn-accent" data-recording="false">
+
+      <div id="frameOptions" class="frame-options hidden">
+        <label class="settings-row settings-folder">
+          <span>Gaya bingkai</span>
+          <select id="frameStyle">
+            <option value="light">Terang (putih)</option>
+            <option value="dark">Gelap</option>
+            <option value="gradient">Gradient ungu</option>
+          </select>
+        </label>
+        <label class="settings-row settings-folder">
+          <span>Padding</span>
+          <select id="framePadding">
+            <option value="20">Kecil (20px)</option>
+            <option value="40" selected>Sedang (40px)</option>
+            <option value="70">Besar (70px)</option>
+          </select>
+        </label>
+        <label class="settings-row">
+          <input type="checkbox" id="frameRounded">
+          <span>Sudut membulat</span>
+        </label>
+        <button id="framedBtn" class="btn btn-save frame-capture-btn">
+          <span class="text">✂️ Pilih Area di Halaman (seperti Snipping Tool)</span>
+        </button>
+      </div>
+
+      <button id="scrollBtn" class="btn btn-accent">
         <span class="icon">📜</span>
-        <span class="text">Hold to Record Scroll</span>
-        <span class="hint">(Max 10s)</span>
+        <span class="text">Mulai Rekam Scroll (Otomatis)</span>
+        <span class="hint">Klik lagi untuk berhenti, otomatis berhenti setelah 10 detik</span>
       </button>
     </div>
-    
+
     <div id="status" class="status hidden">
       <div class="spinner"></div>
       <span id="statusText">Processing...</span>
@@ -42,12 +68,42 @@
       </div>
       <span id="progressText" class="progress-text">0%</span>
     </div>
-    
+
+    <div id="preview" class="preview hidden">
+      <p class="preview-label">Preview</p>
+      <p id="truncatedNotice" class="truncated-notice hidden">⚠️ Halaman terlalu panjang, hasil dipotong sebagian</p>
+      <div class="preview-image-wrap">
+        <img id="previewImg" alt="Screenshot preview" />
+      </div>
+      <div class="preview-actions">
+        <button id="discardBtn" class="btn btn-discard">
+          <span class="text">Discard</span>
+        </button>
+        <button id="saveBtn" class="btn btn-save">
+          <span class="text">Save Screenshot</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="settings">
+      <button id="settingsToggle" class="settings-toggle" type="button">⚙️ Save location settings</button>
+      <div id="settingsPanel" class="settings-panel hidden">
+        <label class="settings-row">
+          <input type="checkbox" id="askSaveLocation">
+          <span>Ask where to save each time</span>
+        </label>
+        <label class="settings-row settings-folder">
+          <span>Subfolder in Downloads</span>
+          <input type="text" id="downloadFolder" placeholder="e.g. LongSS Screenshots">
+        </label>
+      </div>
+    </div>
+
     <footer>
       <p class="tip">💡 Tip: Use scroll recording for dynamic content like social media feeds</p>
     </footer>
   </div>
-  
+
   <script src="popup.js"></script>
 </body>
 </html>
