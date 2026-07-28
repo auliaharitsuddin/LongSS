@@ -98,26 +98,131 @@ async function captureVisibleTabSafe(windowId) {
   }
 }
 
-async function getPageDims(tabId) {
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// All page geometry is read in CSS pixels; the captured bitmaps are in device
+// pixels (CSS * devicePixelRatio), so every conversion to canvas coordinates
+// has to multiply by dpr. Getting this wrong is what used to crop the right
+// edge off every stitched image.
+//
+// clientWidth/clientHeight (not innerWidth/innerHeight) are used as the tile
+// size on purpose: they exclude the scrollbar gutters, which would otherwise
+// get stitched into the middle of the output.
+async function getPageMetrics(tabId) {
   const [result] = await chrome.scripting.executeScript({
     target: { tabId },
-    func: () => ({
-      scrollHeight: document.documentElement.scrollHeight,
-      scrollWidth: document.documentElement.scrollWidth,
-      viewportHeight: window.innerHeight,
-      viewportWidth: window.innerWidth,
-      scrollTop: window.pageYOffset || document.documentElement.scrollTop
-    })
+    func: () => {
+      const de = document.documentElement;
+      const body = document.body;
+      return {
+        dpr: window.devicePixelRatio || 1,
+        scrollWidth: Math.max(de.scrollWidth, body ? body.scrollWidth : 0, de.clientWidth),
+        scrollHeight: Math.max(de.scrollHeight, body ? body.scrollHeight : 0, de.clientHeight),
+        viewportWidth: de.clientWidth,
+        viewportHeight: de.clientHeight,
+        scrollTop: window.pageYOffset || de.scrollTop || 0,
+        scrollLeft: window.pageXOffset || de.scrollLeft || 0
+      };
+    }
   });
   return result.result;
 }
 
-async function scrollPageTo(tabId, top) {
-  await chrome.scripting.executeScript({
+// Scroll and report where the page *actually* landed - a request can be
+// clamped (end of page), snapped, or ignored by a scroll-jacking page, and
+// stitching at the requested offset instead of the real one is what makes
+// the seam between two screens jump.
+async function scrollAndMeasure(tabId, left, top) {
+  const [result] = await chrome.scripting.executeScript({
     target: { tabId },
-    func: (t) => window.scrollTo(0, t),
-    args: [top]
+    func: async (l, t) => {
+      window.scrollTo({ left: l, top: t, behavior: 'instant' });
+      // Two frames: one for the scroll to apply, one for sticky/lazy layout
+      // to settle at the new position.
+      await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+      const de = document.documentElement;
+      return {
+        left: window.pageXOffset || de.scrollLeft || 0,
+        top: window.pageYOffset || de.scrollTop || 0
+      };
+    },
+    args: [left, top]
   });
+  return result.result;
+}
+
+// Sticky/fixed headers and floating bottom bars stay glued to the viewport
+// while we scroll, so they'd be baked into every single screen - repeated
+// down the stitched image and hiding the content behind them. Measure their
+// height once so each screen after the first can be cropped past them.
+async function measureStickyBands(tabId) {
+  try {
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        const de = document.documentElement;
+        const vw = de.clientWidth;
+        const vh = de.clientHeight;
+        const maxBand = vh * 0.35; // anything bigger isn't a bar, it's content
+        let top = 0;
+        let bottom = 0;
+
+        const isPinned = (el) => {
+          const pos = getComputedStyle(el).position;
+          return pos === 'fixed' || pos === 'sticky';
+        };
+
+        for (const x of [vw * 0.15, vw * 0.5, vw * 0.85]) {
+          for (const el of document.elementsFromPoint(Math.round(x), 2)) {
+            if (el.id && el.id.startsWith('longss-')) continue;
+            if (!isPinned(el)) continue;
+            const r = el.getBoundingClientRect();
+            if (r.top <= 2 && r.bottom > top && r.bottom <= maxBand) top = r.bottom;
+          }
+          for (const el of document.elementsFromPoint(Math.round(x), vh - 2)) {
+            if (el.id && el.id.startsWith('longss-')) continue;
+            if (!isPinned(el)) continue;
+            const r = el.getBoundingClientRect();
+            const band = vh - r.top;
+            if (r.bottom >= vh - 2 && band > bottom && band <= maxBand) bottom = band;
+          }
+        }
+        return { top: Math.ceil(top), bottom: Math.ceil(bottom) };
+      }
+    });
+    return result.result || { top: 0, bottom: 0 };
+  } catch (e) {
+    return { top: 0, bottom: 0 };
+  }
+}
+
+// The recording overlay is a fixed element on the page, so captureVisibleTab
+// sees it too. Hide it for the instant the shot is taken, then bring the Stop
+// button back.
+async function setOverlayVisible(tabId, visible) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: (v) => {
+        const el = document.getElementById('longss-recording-overlay');
+        if (el) el.style.visibility = v ? 'visible' : 'hidden';
+      },
+      args: [visible]
+    });
+  } catch (e) {
+    // Overlay not present (full-page capture) - nothing to hide.
+  }
+}
+
+async function captureWithoutOverlay(tab) {
+  await setOverlayVisible(tab.id, false);
+  try {
+    return await captureVisibleTabSafe(tab.windowId);
+  } finally {
+    await setOverlayVisible(tab.id, true);
+  }
 }
 
 // Clamp a requested canvas size down to something Chrome can actually
@@ -133,22 +238,22 @@ function capCanvasHeight(width, height) {
 async function handleFullPageCapture(tabId) {
   try {
     const tab = await chrome.tabs.get(tabId);
-    const dimensions = await getPageDims(tabId);
+    const metrics = await getPageMetrics(tabId);
 
-    if (dimensions.scrollHeight <= dimensions.viewportHeight) {
-      const dataUrl = await captureVisibleTabSafe(tab.windowId);
-      sendCaptureReady(dataUrl, `longss-fullpage-${Date.now()}.png`, 'fullPage', false);
-      return;
-    }
+    const result = await captureGrid(tab, {
+      metrics,
+      startTop: 0,
+      startLeft: 0,
+      limitHeight: metrics.scrollHeight,
+      settleWait: 450
+    });
 
-    await captureAndStitchRange(tab, {
-      startOffset: 0,
-      totalHeight: dimensions.scrollHeight,
-      viewportHeight: dimensions.viewportHeight,
-      viewportWidth: dimensions.viewportWidth,
-      restoreScrollTop: dimensions.scrollTop
-    }, 'fullpage', 'fullPage');
-
+    sendCaptureReady(
+      result.dataUrl,
+      `longss-fullpage-${Date.now()}.png`,
+      'fullPage',
+      result.truncated
+    );
   } catch (error) {
     console.error('Full page capture error:', error);
     chrome.runtime.sendMessage({ action: 'fullPageComplete', error: describeError(error) });
@@ -266,135 +371,220 @@ async function handleStartScrollCapture(tabId) {
 
 async function runScrollCaptureLoop(tabId) {
   const tab = await chrome.tabs.get(tabId);
-  const initialDims = await getPageDims(tabId);
-  const viewportWidth = initialDims.viewportWidth;
-  const viewportHeight = initialDims.viewportHeight;
-  const startTop = initialDims.scrollTop;
+  const metrics = await getPageMetrics(tabId);
 
-  const screenshots = [];
-  let currentTop = startTop;
-  let stableCount = 0;
-  let hitLimit = false;
-
-  while (true) {
-    if (scrollState.stopRequested) break;
-    if (Date.now() - scrollState.startTime > SCROLL_MAX_DURATION) { hitLimit = true; break; }
-    if (screenshots.length >= SCROLL_MAX_SCREENS) { hitLimit = true; break; }
-
-    const dataUrl = await captureVisibleTabSafe(tab.windowId);
-    screenshots.push({ dataUrl, offsetY: currentTop - startTop });
-
-    chrome.runtime.sendMessage({
-      action: 'scrollCaptureProgress',
-      elapsed: Date.now() - scrollState.startTime,
-      screens: screenshots.length
-    });
-
-    if (scrollState.stopRequested) break;
-    if (Date.now() - scrollState.startTime > SCROLL_MAX_DURATION) { hitLimit = true; break; }
-
-    const targetTop = currentTop + viewportHeight;
-    await scrollPageTo(tabId, targetTop);
-    // Give lazy-loaded content (images, infinite-scroll sections) time to render.
-    await new Promise(resolve => setTimeout(resolve, SCROLL_SETTLE_WAIT));
-
-    const dims = await getPageDims(tabId);
-    const newTop = dims.scrollTop;
-
-    if (Math.abs(newTop - currentTop) < 2) {
-      stableCount++;
-      // Require two stable reads in a row before concluding we've hit the
-      // real bottom - the first "no movement" reading might just be page
-      // content still loading.
-      if (stableCount >= 2) break;
-    } else {
-      stableCount = 0;
+  const result = await captureGrid(tab, {
+    metrics,
+    startTop: metrics.scrollTop,
+    startLeft: metrics.scrollLeft,
+    limitHeight: Infinity,
+    maxRows: SCROLL_MAX_SCREENS,
+    settleWait: SCROLL_SETTLE_WAIT,
+    shouldStop: () => scrollState.stopRequested,
+    hasTimedOut: () => Date.now() - scrollState.startTime > SCROLL_MAX_DURATION,
+    onProgress: (rows) => {
+      chrome.runtime.sendMessage({
+        action: 'scrollCaptureProgress',
+        elapsed: Date.now() - scrollState.startTime,
+        screens: rows
+      });
+      chrome.tabs.sendMessage(tabId, { action: 'scrollOverlayProgress', screens: rows }).catch(() => {});
     }
-    currentTop = newTop;
-  }
+  });
 
-  // Restore original scroll position
-  await scrollPageTo(tabId, startTop).catch(() => {});
-
-  if (screenshots.length === 0) {
+  if (!result) {
     chrome.runtime.sendMessage({ action: 'scrollComplete', error: 'Tidak ada konten yang berhasil direkam' });
     return;
   }
 
-  const rawTotalHeight = screenshots[screenshots.length - 1].offsetY + viewportHeight;
-  const capped = capCanvasHeight(viewportWidth, rawTotalHeight);
-  const usableShots = screenshots.filter(s => s.offsetY < capped.height);
-
-  const stitchedDataUrl = await stitchImages(usableShots, { viewportWidth, totalHeight: capped.height });
   sendCaptureReady(
-    stitchedDataUrl,
+    result.dataUrl,
     `longss-scroll-${Date.now()}.png`,
     'scroll',
-    hitLimit || capped.truncated
+    result.truncated
   );
 }
 
-// ---------------- Shared stitching used by full-page + scroll capture ----------------
-async function captureAndStitchRange(tab, params, filenamePrefix, completeAction) {
-  const { startOffset, totalHeight: requestedHeight, viewportHeight, viewportWidth, restoreScrollTop } = params;
-  const capped = capCanvasHeight(viewportWidth, requestedHeight);
-  const totalHeight = capped.height;
-  const maxScrollTop = Math.max(startOffset + totalHeight - viewportHeight, startOffset);
-  const numScreens = Math.max(Math.ceil((totalHeight - viewportHeight) / viewportHeight), 1) + 1;
+// ---------------- Shared capture engine used by full-page + scroll capture ----------------
+// Walks the page as a grid of viewport-sized tiles (columns as well as rows,
+// so pages wider than the window aren't cut off at the right edge), then
+// stitches every tile onto one canvas in device pixels.
+async function captureGrid(tab, options) {
+  const {
+    metrics,
+    startTop = 0,
+    startLeft = 0,
+    limitHeight = Infinity,
+    maxRows = 200,
+    maxColumns = 12,
+    settleWait = 450,
+    shouldStop = () => false,
+    hasTimedOut = () => false,
+    onProgress = null
+  } = options;
 
-  const screenshots = [];
-  let lastScrollTop = null;
+  const tabId = tab.id;
+  const dpr = metrics.dpr || 1;
+  const tileWidth = metrics.viewportWidth;
+  const tileHeight = metrics.viewportHeight;
 
-  for (let i = 0; i < numScreens; i++) {
-    const targetScrollTop = Math.min(startOffset + i * viewportHeight, maxScrollTop);
-
-    if (targetScrollTop === lastScrollTop) break;
-    lastScrollTop = targetScrollTop;
-
-    await scrollPageTo(tab.id, targetScrollTop);
-    await new Promise(resolve => setTimeout(resolve, 450));
-
-    const dataUrl = await captureVisibleTabSafe(tab.windowId);
-    screenshots.push({
-      dataUrl,
-      offsetY: targetScrollTop - startOffset
-    });
-
-    if (targetScrollTop >= maxScrollTop) break;
+  // Column offsets: one per viewport-width of horizontal content, the last
+  // one clamped to the maximum scrollLeft so the right edge is flush.
+  const contentWidth = Math.max(metrics.scrollWidth, tileWidth);
+  const maxScrollLeft = Math.max(contentWidth - tileWidth, 0);
+  const columns = [];
+  for (let x = 0; columns.length < maxColumns; x += tileWidth) {
+    const clamped = Math.min(x, maxScrollLeft);
+    if (columns.length && columns[columns.length - 1] === clamped) break;
+    columns.push(clamped);
+    if (clamped >= maxScrollLeft) break;
   }
 
-  await scrollPageTo(tab.id, restoreScrollTop || 0).catch(() => {});
+  const shots = [];
+  let sticky = { top: 0, bottom: 0 };
+  let targetTop = startTop;
+  let rows = 0;
+  let stableCount = 0;
+  let truncated = false;
+  let reachedBottom = false;
 
-  const stitchedDataUrl = await stitchImages(screenshots, { viewportWidth, totalHeight });
-  sendCaptureReady(stitchedDataUrl, `longss-${filenamePrefix}-${Date.now()}.png`, completeAction, capped.truncated);
+  while (rows < maxRows) {
+    if (shouldStop()) break;
+    if (hasTimedOut()) { truncated = true; break; }
+
+    // Crop the pinned header off every screen except the very first, where
+    // it's genuinely part of the content at that scroll position.
+    const cropTop = rows === 0 ? 0 : sticky.top;
+    let landedTop = targetTop;
+
+    for (let c = 0; c < columns.length; c++) {
+      const columnLeft = columns[c];
+      const pos = await scrollAndMeasure(tabId, columnLeft, targetTop);
+      // Only the first column of a row needs the full settle - that's the one
+      // that changes vertical position and can trigger lazy loading.
+      await sleep(c === 0 ? settleWait : 180);
+      landedTop = pos.top;
+
+      const dataUrl = await captureWithoutOverlay(tab);
+      shots.push({
+        dataUrl,
+        row: rows,
+        left: pos.left,
+        top: pos.top,
+        cropTop,
+        cropBottom: sticky.bottom
+      });
+    }
+
+    rows++;
+    if (onProgress) onProgress(rows);
+
+    // Bars can only be measured once we've scrolled at least once - at the
+    // top of the page a sticky header is indistinguishable from normal content.
+    if (rows === 1) {
+      sticky = await measureStickyBands(tabId);
+      const maxBand = Math.floor(tileHeight * 0.35);
+      sticky.top = Math.min(Math.max(sticky.top, 0), maxBand);
+      sticky.bottom = Math.min(Math.max(sticky.bottom, 0), maxBand);
+    }
+
+    if (landedTop + tileHeight >= startTop + limitHeight - 1) { reachedBottom = true; break; }
+
+    // Advance by exactly the amount of *content* the next screen will show
+    // once its pinned bars are cropped away, so consecutive screens abut
+    // instead of overlapping or leaving a gap.
+    const step = Math.max(tileHeight - sticky.top - sticky.bottom, Math.floor(tileHeight * 0.5));
+    const nextTop = landedTop + step;
+
+    if (Math.abs(nextTop - targetTop) < 2) break;
+    targetTop = nextTop;
+
+    // Detect the real bottom of the page: two consecutive rows that couldn't
+    // move. One is not enough - the first can just be content still loading.
+    const after = await getPageMetrics(tabId);
+    if (after.scrollTop >= after.scrollHeight - after.viewportHeight - 1 &&
+        landedTop >= after.scrollHeight - after.viewportHeight - 1) {
+      stableCount++;
+      if (stableCount >= 2) { reachedBottom = true; break; }
+    } else {
+      stableCount = 0;
+    }
+  }
+
+  if (rows >= maxRows && !reachedBottom) truncated = true;
+
+  // Restore the page to where the user left it.
+  await scrollAndMeasure(tabId, startLeft, startTop).catch(() => {});
+
+  if (shots.length === 0) return null;
+
+  // The pinned bottom bar is cropped from every screen so it doesn't repeat
+  // mid-image, but on the final screen that band is the actual end of the
+  // page - keep it there.
+  const lastRow = shots[shots.length - 1].row;
+  shots.forEach(shot => { if (shot.row === lastRow) shot.cropBottom = 0; });
+
+  const stitched = await stitchShots(shots, {
+    dpr,
+    tileWidth,
+    tileHeight,
+    startTop,
+    contentWidth
+  });
+
+  return { dataUrl: stitched.dataUrl, truncated: truncated || stitched.truncated };
 }
 
-// Stitch images together
-async function stitchImages(screenshots, dimensions) {
-  if (screenshots.length === 0) {
-    throw new Error('No screenshots captured');
+// Draw every captured tile onto one canvas. Everything here is device pixels:
+// the bitmaps come back from captureVisibleTab at CSS size * devicePixelRatio,
+// so the canvas and all offsets are scaled to match.
+async function stitchShots(shots, layout) {
+  const { dpr, tileWidth, tileHeight, startTop, contentWidth } = layout;
+
+  let canvasWidth = Math.round(contentWidth * dpr);
+  const contentBottom = shots.reduce(
+    (max, s) => Math.max(max, s.top + tileHeight - s.cropBottom - startTop),
+    0
+  );
+  const capped = capCanvasHeight(canvasWidth, Math.round(contentBottom * dpr));
+  const canvasHeight = capped.height;
+
+  const canvas = new OffscreenCanvas(canvasWidth, canvasHeight);
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  // Decode and draw one tile at a time: holding 30 full-viewport bitmaps at
+  // once is what pushes long captures into an out-of-memory failure.
+  for (const shot of shots) {
+    let bitmap;
+    try {
+      bitmap = await dataUrlToImageBitmap(shot.dataUrl);
+    } catch (error) {
+      throw new Error('Gagal memuat salah satu hasil tangkapan layar');
+    }
+
+    try {
+      const sx = 0;
+      const sy = Math.round(shot.cropTop * dpr);
+      const sw = Math.min(Math.round(tileWidth * dpr), bitmap.width);
+      const sh = Math.min(
+        Math.round((tileHeight - shot.cropTop - shot.cropBottom) * dpr),
+        bitmap.height - sy
+      );
+      if (sw <= 0 || sh <= 0) continue;
+
+      const dx = Math.round(shot.left * dpr);
+      const dy = Math.round((shot.top - startTop + shot.cropTop) * dpr);
+      if (dy >= canvasHeight) continue;
+
+      ctx.drawImage(bitmap, sx, sy, sw, sh, dx, dy, sw, sh);
+    } finally {
+      bitmap.close();
+    }
   }
 
-  let bitmaps;
-  try {
-    bitmaps = await Promise.all(screenshots.map(s => dataUrlToImageBitmap(s.dataUrl)));
-  } catch (error) {
-    throw new Error('Gagal memuat salah satu hasil tangkapan layar');
-  }
-
-  try {
-    const canvas = new OffscreenCanvas(dimensions.viewportWidth, dimensions.totalHeight);
-    const ctx = canvas.getContext('2d');
-
-    bitmaps.forEach((bitmap, i) => {
-      ctx.drawImage(bitmap, 0, screenshots[i].offsetY);
-    });
-
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
-    return blobToDataUrl(blob);
-  } finally {
-    bitmaps.forEach(bitmap => bitmap.close());
-  }
+  const blob = await canvas.convertToBlob({ type: 'image/png' });
+  return { dataUrl: await blobToDataUrl(blob), truncated: capped.truncated };
 }
 
 // Add frame to image based on user-chosen options
