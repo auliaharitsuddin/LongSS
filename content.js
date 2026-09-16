@@ -11,6 +11,28 @@
 // page). Wrapped in an IIFE so re-injection never throws "already declared"
 // for the top-level state below, whether or not a dead copy is still around.
 (function () {
+  const CONTENT_I18N = {
+    id: {
+      recording: 'Merekam scroll...',
+      recordingWithCount: (n) => `Merekam scroll... (${n} bagian)`,
+      stop: 'Stop',
+      selectionHint: 'Seret untuk memilih area screenshot • Esc untuk batal'
+    },
+    en: {
+      recording: 'Recording scroll...',
+      recordingWithCount: (n) => `Recording scroll... (${n} parts)`,
+      stop: 'Stop',
+      selectionHint: 'Drag to select the screenshot area • Esc to cancel'
+    }
+  };
+  let contentLang = 'id';
+  chrome.storage.local.get({ lssLang: 'id' }, ({ lssLang }) => {
+    contentLang = lssLang === 'en' ? 'en' : 'id';
+  });
+  function ct(key) {
+    return CONTENT_I18N[contentLang][key];
+  }
+
   let recordingOverlay = null;
   let keepAlivePort = null;
 
@@ -47,8 +69,8 @@
     recordingOverlay.innerHTML = `
       <div class="longss-recording-indicator">
         <div class="longss-recording-dot"></div>
-        <span id="longss-recording-text">Merekam scroll...</span>
-        <button id="longss-stop-btn" type="button">Stop</button>
+        <span id="longss-recording-text">${ct('recording')}</span>
+        <button id="longss-stop-btn" type="button">${ct('stop')}</button>
       </div>
     `;
     document.body.appendChild(recordingOverlay);
@@ -62,7 +84,7 @@
     if (!recordingOverlay) return;
     const textEl = document.getElementById('longss-recording-text');
     if (textEl) {
-      textEl.textContent = `Merekam scroll... (${screens} bagian)`;
+      textEl.textContent = ct('recordingWithCount')(screens);
     }
   }
 
@@ -86,7 +108,7 @@
 
     const hint = document.createElement('div');
     hint.id = 'longss-selection-hint';
-    hint.textContent = 'Seret untuk memilih area screenshot • Esc untuk batal';
+    hint.textContent = ct('selectionHint');
     selectionOverlay.appendChild(hint);
 
     selectionBox = document.createElement('div');

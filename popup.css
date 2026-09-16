@@ -21,6 +21,31 @@ header {
   color: white;
   padding: 20px;
   text-align: center;
+  position: relative;
+}
+
+.lang-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 2px;
+}
+
+.lang-btn {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: transparent;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.lang-btn[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.9);
+  color: #764ba2;
 }
 
 h1 {

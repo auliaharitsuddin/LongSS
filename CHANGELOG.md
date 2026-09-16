@@ -5,6 +5,12 @@ All notable changes to the LongSS extension will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-09-16
+
+### Added
+- 🌐 Indonesian/English language toggle in the popup UI (ID/EN buttons), persisted via `chrome.storage.local`
+- 🌐 Localized on-page overlay text (scroll recording indicator, area-selection hint) in `content.js`
+
 ## [1.0.0] - 2026-07-23
 
 ### Added
@@ -77,6 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.0.1 | 2026-09-16 | Indonesian/English language toggle |
 | 1.0.0 | 2026-07-23 | Initial release with core features |
 
 ---
@@ -101,5 +108,5 @@ Please report bugs and feature requests on GitHub Issues with:
 
 ---
 
-**Latest Version**: 1.0.0  
-**Last Updated**: July 23, 2026
+**Latest Version**: 1.0.1  
+**Last Updated**: September 16, 2026

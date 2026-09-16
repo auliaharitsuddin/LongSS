@@ -22,6 +22,7 @@ LongSS is a lightweight Chrome/Edge/Brave/Opera extension that captures screensh
 - Save-location settings: ask where to save each time, or specify a subfolder under Downloads (`popup.js`)
 - Preview pane before saving, with Save/Discard actions
 - Progress bar and status messages during capture
+- Indonesian/English language toggle in the popup, persisted via `chrome.storage.local`
 - Manifest V3 service worker architecture
 
 ### Permissions (from `manifest.json`)
@@ -108,6 +109,7 @@ LongSS adalah ekstensi ringan untuk Chrome/Edge/Brave/Opera yang menangkap scree
 - Pengaturan lokasi simpan: tanya lokasi setiap kali, atau tentukan subfolder di dalam Downloads (`popup.js`)
 - Panel preview sebelum menyimpan, dengan aksi Save/Discard
 - Progress bar dan pesan status selama proses capture
+- Toggle bahasa Indonesia/Inggris di popup, tersimpan lewat `chrome.storage.local`
 - Arsitektur service worker Manifest V3
 
 ### Izin (dari `manifest.json`)

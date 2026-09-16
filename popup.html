@@ -9,8 +9,12 @@
 <body>
   <div class="container">
     <header>
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button id="langIdBtn" class="lang-btn" type="button" aria-pressed="true">ID</button>
+        <button id="langEnBtn" class="lang-btn" type="button" aria-pressed="false">EN</button>
+      </div>
       <h1>📸 LongSS</h1>
-      <p class="subtitle">Long Screenshot Tool</p>
+      <p class="subtitle" id="subtitleText">Long Screenshot Tool</p>
     </header>
     
     <div class="buttons">
@@ -26,24 +30,24 @@
 
       <div id="frameOptions" class="frame-options hidden">
         <label class="settings-row settings-folder">
-          <span>Gaya bingkai</span>
+          <span id="frameStyleLabel">Gaya bingkai</span>
           <select id="frameStyle">
-            <option value="light">Terang (putih)</option>
-            <option value="dark">Gelap</option>
-            <option value="gradient">Gradient ungu</option>
+            <option value="light" id="frameStyleLight">Terang (putih)</option>
+            <option value="dark" id="frameStyleDark">Gelap</option>
+            <option value="gradient" id="frameStyleGradient">Gradient ungu</option>
           </select>
         </label>
         <label class="settings-row settings-folder">
-          <span>Padding</span>
+          <span id="framePaddingLabel">Padding</span>
           <select id="framePadding">
-            <option value="20">Kecil (20px)</option>
-            <option value="40" selected>Sedang (40px)</option>
-            <option value="70">Besar (70px)</option>
+            <option value="20" id="framePaddingSmall">Kecil (20px)</option>
+            <option value="40" selected id="framePaddingMedium">Sedang (40px)</option>
+            <option value="70" id="framePaddingLarge">Besar (70px)</option>
           </select>
         </label>
         <label class="settings-row">
           <input type="checkbox" id="frameRounded">
-          <span>Sudut membulat</span>
+          <span id="frameRoundedLabel">Sudut membulat</span>
         </label>
         <button id="framedBtn" class="btn btn-save frame-capture-btn">
           <span class="text">✂️ Pilih Area di Halaman (seperti Snipping Tool)</span>
@@ -61,7 +65,7 @@
       <div class="spinner"></div>
       <span id="statusText">Processing...</span>
     </div>
-    
+
     <div id="progress" class="progress hidden">
       <div class="progress-bar">
         <div id="progressFill" class="progress-fill"></div>
@@ -70,7 +74,7 @@
     </div>
 
     <div id="preview" class="preview hidden">
-      <p class="preview-label">Preview</p>
+      <p class="preview-label" id="previewLabel">Preview</p>
       <p id="truncatedNotice" class="truncated-notice hidden">⚠️ Halaman terlalu panjang, hasil dipotong sebagian</p>
       <div class="preview-image-wrap">
         <img id="previewImg" alt="Screenshot preview" />
@@ -90,17 +94,17 @@
       <div id="settingsPanel" class="settings-panel hidden">
         <label class="settings-row">
           <input type="checkbox" id="askSaveLocation">
-          <span>Ask where to save each time</span>
+          <span id="askSaveLocationLabel">Ask where to save each time</span>
         </label>
         <label class="settings-row settings-folder">
-          <span>Subfolder in Downloads</span>
+          <span id="downloadFolderLabel">Subfolder in Downloads</span>
           <input type="text" id="downloadFolder" placeholder="e.g. LongSS Screenshots">
         </label>
       </div>
     </div>
 
     <footer>
-      <p class="tip">💡 Tip: Use scroll recording for dynamic content like social media feeds</p>
+      <p class="tip" id="tipText">💡 Tip: Use scroll recording for dynamic content like social media feeds</p>
     </footer>
   </div>
 
